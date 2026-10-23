@@ -1,0 +1,1 @@
+"""HomeCare Copilot - Server package."""
