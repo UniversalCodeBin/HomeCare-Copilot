@@ -315,26 +315,33 @@ class AlexaPlusPlanner:
                 "parameters": clean_params,
             }
 
+            details = diag_res.get("details", {})
+            causes = details.get("causes", [])
+            top_cause = causes[0] if causes else {}
+
             spoken = (
-                "I diagnosed your dishwasher: evidence shows the micro-mesh filter is 88 percent clogged "
-                "with hard-water mineral buildup and active error code E24. I ran a dry-run preview for a "
-                "high-temperature cleaning cycle. No changes have been applied yet. Would you like me to start the cleaning cycle?"
+                f"I've diagnosed the issue. The most likely cause is {top_cause.get('cause', 'unknown issue')}, "
+                f"with {int(top_cause.get('confidence', 0)*100)}% confidence. "
+                "I've run a dry-run preview for a high-temperature cleaning cycle. No changes have been applied yet. "
+                "Would you like me to start the cleaning cycle?"
             )
 
             causes_md = "\n".join(
                 f"- **{c.get('cause')}** ({int(c.get('confidence', 0)*100)}% confidence): {c.get('description')}"
-                for c in diag_res.get("details", {}).get("causes", [])
+                for c in causes
             )
             evidence_md = "\n".join(
-                f"- {e}" for e in diag_res.get("details", {}).get("evidence", [])
+                f"- {e}" for e in details.get("evidence", [])
             )
 
             return {
                 "spoken_summary": spoken,
                 "display_text": (
                     "### Dishwasher Telemetry Diagnosis\n\n"
+                    f"**Diagnosis**: {top_cause.get('cause', 'Unable to determine')}\n"
+                    f"**Confidence**: {int(top_cause.get('confidence', 0)*100)}%\n\n"
                     f"**Evidence Gathered**:\n{evidence_md}\n\n"
-                    f"**Ranked Probable Causes**:\n{causes_md}\n\n"
+                    f"**Other Possible Causes**:\n{causes_md}\n\n"
                     "### Dry Run Proposed Action\n"
                     "- **Action**: `run_cycle` (`cleaning_cycle`)\n"
                     "- **Settings**: High Water Temp, Heat Dry\n"
